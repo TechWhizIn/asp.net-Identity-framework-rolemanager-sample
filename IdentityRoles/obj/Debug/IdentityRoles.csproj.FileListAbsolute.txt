@@ -52,3 +52,4 @@ D:\Sahan\Test Projects\IdentityRoles\IdentityRoles\bin\Microsoft.Owin.Security.T
 D:\Sahan\Test Projects\IdentityRoles\IdentityRoles\bin\Microsoft.Owin.Security.MicrosoftAccount.xml
 D:\Sahan\Test Projects\IdentityRoles\IdentityRoles\obj\Debug\IdentityRoles.dll
 D:\Sahan\Test Projects\IdentityRoles\IdentityRoles\obj\Debug\IdentityRoles.pdb
+D:\Sahan\Test Projects\IdentityRoles\IdentityRoles\obj\Debug\IdentityRoles.csprojResolveAssemblyReference.cache
