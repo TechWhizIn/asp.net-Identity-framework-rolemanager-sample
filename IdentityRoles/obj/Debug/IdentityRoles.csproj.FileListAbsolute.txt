@@ -50,6 +50,5 @@ D:\Sahan\Test Projects\IdentityRoles\IdentityRoles\bin\Microsoft.Owin.Security.O
 D:\Sahan\Test Projects\IdentityRoles\IdentityRoles\bin\Microsoft.Owin.Security.Google.xml
 D:\Sahan\Test Projects\IdentityRoles\IdentityRoles\bin\Microsoft.Owin.Security.Twitter.xml
 D:\Sahan\Test Projects\IdentityRoles\IdentityRoles\bin\Microsoft.Owin.Security.MicrosoftAccount.xml
-D:\Sahan\Test Projects\IdentityRoles\IdentityRoles\obj\Debug\IdentityRoles.csprojResolveAssemblyReference.cache
 D:\Sahan\Test Projects\IdentityRoles\IdentityRoles\obj\Debug\IdentityRoles.dll
 D:\Sahan\Test Projects\IdentityRoles\IdentityRoles\obj\Debug\IdentityRoles.pdb

@@ -48,10 +48,6 @@ namespace IdentityRoles.Controllers
             var roleManager = HttpContext.GetOwinContext().Get<ApplicationRoleManager>();
             var roles = roleManager.Roles.ToList();
 
-            var list = new SelectList(roles, "Id", "Name");
-
-            ViewBag.Roles = list;
-
             ViewBag.ReturnUrl = returnUrl;
             return View();
         }
@@ -85,6 +81,18 @@ namespace IdentityRoles.Controllers
             switch (result)
             {
                 case SignInStatus.Success:
+                    var user = await UserManager.FindByEmailAsync(model.Email);
+                    var userRole = await UserManager.GetRolesAsync(user.Id);
+
+                    if (userRole.Any(role => role == "user"))
+                    {
+                        RedirectToAction("NormalUser", "Home");
+                    }
+                    else
+                    {
+                        RedirectToAction("Index", "Home");
+                    }
+
                     return RedirectToLocal(returnUrl);
                 case SignInStatus.LockedOut:
                     return View("Lockout");
@@ -146,6 +154,98 @@ namespace IdentityRoles.Controllers
         }
 
         //
+        // GET: /Account/CreateAdminUser
+        [Authorize(Roles = "superuser")]
+        public ActionResult CreateAdminUser()
+        {
+            return View();
+        }
+
+        //
+        // POST: /Account/Register
+        [HttpPost]
+        [Authorize(Roles = "superuser")]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> CreateAdminUser(RegisterViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
+                var result = await UserManager.CreateAsync(user, model.Password);
+                if (result.Succeeded)
+                {
+                    //await SignInManager.SignInAsync(user, isPersistent: false, rememberBrowser: false);
+
+                    //var currentUser = await UserManager.FindByEmailAsync(model.Email);
+                    await UserManager.AddToRoleAsync(user.Id, "admin");
+
+                    // For more information on how to enable account confirmation and password reset please visit http://go.microsoft.com/fwlink/?LinkID=320771
+                    // Send an email with this link
+                    // string code = await UserManager.GenerateEmailConfirmationTokenAsync(user.Id);
+                    // var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, protocol: Request.Url.Scheme);
+                    // await UserManager.SendEmailAsync(user.Id, "Confirm your account", "Please confirm your account by clicking <a href=\"" + callbackUrl + "\">here</a>");
+
+                    ViewBag.NewUser = user.UserName;
+
+                    return View("CreateUserSuccess");
+
+                    //return RedirectToAction("Index", "Home");
+                }
+                AddErrors(result);
+            }
+
+            // If we got this far, something failed, redisplay form
+            return View(model);
+        }
+
+        //
+        // GET: /Account/CreateUser
+        [Authorize(Roles = "admin")]
+        public ActionResult CreateNormalUser()
+        {
+            return View();
+        }
+
+
+        //
+        // POST: /Account/Register
+        [HttpPost]
+        [Authorize(Roles = "admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<ActionResult> CreateNormalUser(RegisterViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
+                var result = await UserManager.CreateAsync(user, model.Password);
+                if (result.Succeeded)
+                {
+                    //await SignInManager.SignInAsync(user, isPersistent: false, rememberBrowser: false);
+
+                    //var currentUser = await UserManager.FindByEmailAsync(model.Email);
+                    await UserManager.AddToRoleAsync(user.Id, "user");
+
+                    // For more information on how to enable account confirmation and password reset please visit http://go.microsoft.com/fwlink/?LinkID=320771
+                    // Send an email with this link
+                    // string code = await UserManager.GenerateEmailConfirmationTokenAsync(user.Id);
+                    // var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, protocol: Request.Url.Scheme);
+                    // await UserManager.SendEmailAsync(user.Id, "Confirm your account", "Please confirm your account by clicking <a href=\"" + callbackUrl + "\">here</a>");
+
+                    ViewBag.NewUser = user.UserName;
+
+                    return View("CreateUserSuccess");
+
+                    //return RedirectToAction("Index", "Home");
+                }
+                AddErrors(result);
+            }
+
+            // If we got this far, something failed, redisplay form
+            return View(model);
+        }
+
+
+        //
         // GET: /Account/Register
         [AllowAnonymous]
         public ActionResult Register()
@@ -166,15 +266,20 @@ namespace IdentityRoles.Controllers
                 var result = await UserManager.CreateAsync(user, model.Password);
                 if (result.Succeeded)
                 {
-                    await SignInManager.SignInAsync(user, isPersistent:false, rememberBrowser:false);
-                    
+                    //await SignInManager.SignInAsync(user, isPersistent:false, rememberBrowser:false);
+
+                    //var currentUser = await UserManager.FindByEmailAsync(model.Email);
+                    await UserManager.AddToRoleAsync(user.Id, "superuser");
+
                     // For more information on how to enable account confirmation and password reset please visit http://go.microsoft.com/fwlink/?LinkID=320771
                     // Send an email with this link
                     // string code = await UserManager.GenerateEmailConfirmationTokenAsync(user.Id);
                     // var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, protocol: Request.Url.Scheme);
                     // await UserManager.SendEmailAsync(user.Id, "Confirm your account", "Please confirm your account by clicking <a href=\"" + callbackUrl + "\">here</a>");
 
-                    return RedirectToAction("Index", "Home");
+                    var loginUrl = Url.Action("Login", "Account", null, protocol: Request.Url.Scheme);
+                    ViewBag.Message = "You have successfully registered as super user. Please login.";
+                    return View("Login");
                 }
                 AddErrors(result);
             }
@@ -471,6 +576,14 @@ namespace IdentityRoles.Controllers
                 context.HttpContext.GetOwinContext().Authentication.Challenge(properties, LoginProvider);
             }
         }
+
+        public enum RoleNames
+        {
+            admin,
+            superuser,
+            user
+        }
+
         #endregion
     }
 }

@@ -67,8 +67,6 @@ namespace IdentityRoles.Models
         [Display(Name = "Remember me?")]
         public bool RememberMe { get; set; }
 
-        public  IEnumerable<IdentityRole> RoleDetails;
-
     }
 
     public class RoleDetails
