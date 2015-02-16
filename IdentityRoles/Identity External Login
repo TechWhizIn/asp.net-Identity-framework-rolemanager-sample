@@ -1,0 +1,105 @@
+[AllowAnonymous]
+        public async Task<ActionResult> ExternalLoginCallback(string returnUrl)
+        {
+            try
+            {
+                var email = string.Empty;
+                var firstName = string.Empty;
+                var lastName = string.Empty;
+                var userName = string.Empty;
+
+                ViewBag.DebugOrQa = IsDebugerOrQa();
+
+                var loginInfo = await AuthenticationManager.GetExternalLoginInfoAsync();
+
+                if (loginInfo != null)
+                {
+                    ViewBag.LoginProvider = loginInfo.Login.LoginProvider;
+                }
+                else
+                {
+                    return RedirectToAction("Login");
+                }
+                var externalIdentity = AuthenticationManager.GetExternalIdentityAsync(DefaultAuthenticationTypes.ExternalCookie);
+                var emailClaim = externalIdentity.Result.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email);
+                var surnameClaim = externalIdentity.Result.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Surname);
+                var givenNameClaim = externalIdentity.Result.Claims.FirstOrDefault(c => c.Type == ClaimTypes.GivenName);
+
+                if (loginInfo.Login.LoginProvider == ExternalLoginProvider.Facebook.ToString())
+                {
+                    var name = externalIdentity.Result.Claims.First(c => c.Type.Contains("urn:facebook:name"));
+                    firstName = StringExtensions.GetFirstName(name.Value);
+                    lastName = StringExtensions.GetLastName(name.Value);
+
+                    if (emailClaim != null) email = emailClaim.Value;
+                }
+
+                if (loginInfo.Login.LoginProvider == ExternalLoginProvider.LinkedIn.ToString())
+                {
+                    var name = externalIdentity.Result.Claims.First(c => c.Type.Contains("urn:linkedin:name"));
+                    firstName = StringExtensions.GetFirstName(name.Value);
+                    lastName = StringExtensions.GetLastName(name.Value);
+                    if (emailClaim != null) email = emailClaim.Value;
+                }
+
+                if (loginInfo.Login.LoginProvider == ExternalLoginProvider.Google.ToString())
+                {
+                    email = emailClaim.Value;
+                    firstName = givenNameClaim.Value;
+                    lastName = surnameClaim.Value;
+                }
+
+                if (loginInfo.Login.LoginProvider == ExternalLoginProvider.Twitter.ToString())
+                {
+                    var screenname = externalIdentity.Result.Claims.First(c => c.Type.Contains("urn:twitter:screenname"));
+                    userName = screenname.Value;
+                }
+
+                if (loginInfo.Login.LoginProvider == ExternalLoginProvider.Microsoft.ToString())
+                {
+                    if (externalIdentity.Result.Name != null)
+                    {
+                        var name = externalIdentity.Result.Name;
+                        firstName = StringExtensions.GetFirstName(name);
+                        lastName = StringExtensions.GetLastName(name);
+                    }
+                }
+
+                var user = await userManager.FindAsync(loginInfo.Login);
+                if (user != null)
+                {
+                    var result = await identityManager.ExternalSignIn(loginInfo, false, AuthenticationManager);
+                    switch (result)
+                    {
+                        case SignInStatus.Success:
+                            var currentUserName = user.UserName ?? user.Email;
+                            var currentUser = await identityManager.FindByNameAsync(currentUserName);
+                            var userRole = await identityManager.GetRolesAsync(currentUser.Id);
+                            await identityManager.UpdateUserLastLoginAsync(user);
+                            return userRole.Any(role => role == UserRole.Validated.ToString()) ? RedirectToAction("NewAccount", "User") : RedirectToLocal(returnUrl);
+
+                        case SignInStatus.LockedOut:
+                            return View("Lockout");
+                        case SignInStatus.RequiresTwoFactorAuthentication:
+                            return RedirectToAction("SendCode", new { ReturnUrl = returnUrl });
+                        case SignInStatus.EmailToBeConfirmed:
+                            return View("DisplayEmail");
+                        case SignInStatus.Failure:
+                        default:
+                            // If the user does not have an account, then prompt the user to create an account
+                            ViewBag.ReturnUrl = returnUrl;
+                            ViewBag.LoginProvider = loginInfo.Login.LoginProvider;
+                            return View("ExternalLoginConfirmation", new UserExternalLoginConfirmationViewModel { Email = email, FirstName = firstName, LastName = lastName, UserName = userName });
+                    }
+                }
+                return View("ExternalLoginConfirmation", new UserExternalLoginConfirmationViewModel { Email = email, FirstName = firstName, LastName = lastName, UserName = userName });
+            }
+            catch (Exception ex)
+            {
+                loggingManager.LogException("[GET] ExternalLoginCallback", ex);
+                // TODO: need to inform user of error 
+                throw;
+            }
+
+            
+        }
